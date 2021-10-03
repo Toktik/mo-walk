@@ -344,7 +344,7 @@ describe('MoWalk', () => {
     it('fails when encountering bad syntax.', async () => {
 
         await expect(Mo.walk(module, 'closet/bad-syntax', { visit: () => null }))
-            .to.reject('Unexpected token \':\'');
+            .to.reject(SyntaxError, 'Unexpected token \':\'');
     });
 
     it('fails when encountering a runtime error in a module.', async () => {

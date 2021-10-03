@@ -2,6 +2,7 @@
 
 // Load modules
 
+const { AssertionError } = require('assert');
 const Path = require('path');
 const Lab = require('@hapi/lab');
 const Code = require('@hapi/code');
@@ -262,5 +263,57 @@ describe('MoWalk', () => {
             [{ default: { index: 'mjs' } }, 'index.mjs', 'kitchen-sink/x/z/index.mjs'],
             [{ l: 'js' }, 'l.js', 'kitchen-sink/x/y/u/l.js']
         ]);
+    });
+
+    it('walks multiple indexes when not stopping at index.', async () => {
+
+        const visits = [];
+
+        await Mo.walk(module, 'closet/multiple-index', {
+            stopAtIndexes: false,
+            visit: (value, path, filename) => {
+
+                visits.push([value, filename, relativize(path)]);
+            }
+        });
+
+        expect(visits.sort(byPath)).to.equal([
+            [{ a: 'js' }, 'a.js', 'multiple-index/a.js'],
+            [{ b: 'json' }, 'b.json', 'multiple-index/x/b.json'],
+            [{ index: 'js' }, 'index.js', 'multiple-index/x/index.js'],
+            [{ default: { index: 'mjs' } }, 'index.mjs', 'multiple-index/x/index.mjs']
+        ]);
+    });
+
+    it('fails upon encoutering multiple indexes when stopping at index.', async () => {
+
+        await expect(Mo.walk(module, 'closet/multiple-index', {
+            stopAtIndexes: true,
+            visit: () => null
+        })).to.reject(AssertionError, /^Multiple index entries found in .+?\/multiple-index\/x: index\.js, index\.mjs\.$/);
+    });
+
+    it('fails when failing to specific visit option correctly.', async () => {
+
+        await expect(Mo.walk(module, 'closet/multiple-index'))
+            .to.reject(AssertionError, 'Please specify options.visit as a function.');
+
+        await expect(Mo.walk(module, 'closet/multiple-index', {}))
+            .to.reject(AssertionError, 'Please specify options.visit as a function.');
+
+        await expect(Mo.walk(module, 'closet/multiple-index', { visit: true }))
+            .to.reject(AssertionError, 'Please specify options.visit as a function.');
+    });
+
+    it('fails when encountering bad syntax.', async () => {
+
+        await expect(Mo.walk(module, 'closet/bad-syntax', { visit: () => null }))
+            .to.reject('Unexpected token \':\'');
+    });
+
+    it('fails when encountering a runtime error in a module.', async () => {
+
+        await expect(Mo.walk(module, 'closet/bad-at-runtime', { visit: () => null }))
+            .to.reject(Error, 'Oops!');
     });
 });

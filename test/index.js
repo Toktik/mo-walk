@@ -285,6 +285,42 @@ describe('MoWalk', () => {
         ]);
     });
 
+    it('walks awaiting each visit.', async () => {
+
+        const visits = [];
+        const wait = (ms) => {
+
+            return new Promise((res) => setTimeout(res, ms));
+        };
+
+        await Mo.walk(module, 'closet/kitchen-sink', {
+            recursive: false,
+            visit: async (value, path, filename) => {
+
+                await wait(5);
+
+                visits.push([value, filename, relativize(path)]);
+            }
+        });
+
+        expect(visits.sort(byPath)).to.equal([
+            [{ a: 'js' }, 'a.js', 'kitchen-sink/a.js'],
+            [{ default: { b: 'mjs' } }, 'b.mjs', 'kitchen-sink/b.mjs'],
+            [{ c: 'json' }, 'c.json', 'kitchen-sink/c.json']
+        ]);
+    });
+
+    it('fails when a visit fails.', async () => {
+
+        await expect(Mo.walk(module, 'closet/kitchen-sink', {
+            recursive: false,
+            visit: () => {
+
+                throw new Error('D\'oh!');
+            }
+        })).to.reject(Error, 'D\'oh!');
+    });
+
     it('fails upon encoutering multiple indexes when stopping at index.', async () => {
 
         await expect(Mo.walk(module, 'closet/multiple-index', {

@@ -23,7 +23,9 @@
     "visit",
     "module",
     "esm",
-    "utility"
+    "utility",
+    "import",
+    "require"
   ],
   "author": "Devin Ivy <devin@bigroomstudios.com>",
   "license": "MIT",

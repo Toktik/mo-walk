@@ -352,4 +352,73 @@ describe('MoWalk', () => {
         await expect(Mo.walk(module, 'closet/bad-at-runtime', { visit: () => null }))
             .to.reject(Error, 'Oops!');
     });
+
+    describe('tryToResolve()', () => {
+
+        const fixture = (filename) => Path.join(__dirname, 'closet', 'try-to-resolve', filename);
+
+        it('resolves cjs file.', async () => {
+
+            const resolved = await Mo.tryToResolve(fixture('a'));
+
+            expect(resolved).to.be.an.array().and.length(2);
+            expect(resolved[0]).to.equal({ a: 'js' });
+            expect(relativize(resolved[1])).to.equal('try-to-resolve/a.js');
+        });
+
+        it('resolves cjs directory.', async () => {
+
+            const resolved = await Mo.tryToResolve(fixture('c'));
+
+            expect(resolved).to.be.an.array().and.length(2);
+            expect(resolved[0]).to.equal({ c: 'js' });
+            expect(relativize(resolved[1])).to.equal('try-to-resolve/c/index.js');
+        });
+
+        it('resolves mjs file with extension.', async () => {
+
+            const resolved = await Mo.tryToResolve(fixture('b.mjs'));
+
+            expect(resolved).to.be.an.array().and.length(2);
+            expect(resolved[0]).to.equal({ default: { b: 'mjs' } });
+            expect(relativize(resolved[1])).to.equal('try-to-resolve/b.mjs');
+        });
+
+        it('resolves mjs file without extension.', async () => {
+
+            const resolved = await Mo.tryToResolve(fixture('b'));
+
+            expect(resolved).to.be.an.array().and.length(2);
+            expect(resolved[0]).to.equal({ default: { b: 'mjs' } });
+            expect(relativize(resolved[1])).to.equal('try-to-resolve/b.mjs');
+        });
+
+        it('resolves mjs directory.', async () => {
+
+            const resolved = await Mo.tryToResolve(fixture('d'));
+
+            expect(resolved).to.be.an.array().and.length(2);
+            expect(resolved[0]).to.equal({ default: { d: 'mjs' } });
+            expect(relativize(resolved[1])).to.equal('try-to-resolve/d/index.mjs');
+        });
+
+        it('resolves nothing gracefully.', async () => {
+
+            const resolved = await Mo.tryToResolve(fixture('nothing'));
+
+            expect(resolved).to.be.undefined();
+        });
+
+        it('throws cjs errors.', async () => {
+
+            await expect(Mo.tryToResolve(fixture('a-bad')))
+                .to.reject(SyntaxError, 'Unexpected token \':\'');
+        });
+
+        it('throws mjs errors.', async () => {
+
+            await expect(Mo.tryToResolve(fixture('b-bad')))
+                .to.reject(SyntaxError, 'Unexpected token \':\'');
+        });
+    });
 });

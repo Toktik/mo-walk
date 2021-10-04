@@ -1,1 +1,3 @@
 test/closet/bad-syntax/x/b.js
+test/closet/try-to-resolve/a-bad.js
+test/closet/try-to-resolve/b-bad.mjs

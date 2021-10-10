@@ -46,15 +46,15 @@ describe('MoWalk', () => {
 
         const visits = [];
 
-        require.extensions['.cjs'] = require.extensions['.js'];
+        require.extensions['.pjs'] = require.extensions['.js'];
         flags.onCleanup = () => {
 
-            delete require.extensions['.cjs'];
+            delete require.extensions['.pjs'];
         };
 
         await Mo.walk(module, 'closet/kitchen-sink', {
             recursive: false,
-            extensions: [...Mo.defaultExtensions, 'cjs'],
+            extensions: [...Mo.defaultExtensions, 'pjs'],
             visit: (value, path, filename) => {
 
                 visits.push([value, filename, relativize(path)]);
@@ -65,7 +65,7 @@ describe('MoWalk', () => {
             [{ a: 'js' }, 'a.js', 'kitchen-sink/a.js'],
             [{ default: { b: 'mjs' } }, 'b.mjs', 'kitchen-sink/b.mjs'],
             [{ c: 'json' }, 'c.json', 'kitchen-sink/c.json'],
-            [{ e: 'cjs' }, 'e.cjs', 'kitchen-sink/e.cjs']
+            [{ e: 'pjs' }, 'e.pjs', 'kitchen-sink/e.pjs']
         ]);
     });
 
@@ -122,7 +122,7 @@ describe('MoWalk', () => {
 
         await Mo.walk(module, 'closet/kitchen-sink', {
             recursive: true,
-            extensions: [...Mo.defaultExtensions, 'cjs'],
+            extensions: [...Mo.defaultExtensions, 'pjs'],
             visit: (value, path, filename) => {
 
                 visits.push([value, filename, relativize(path)]);
@@ -133,12 +133,12 @@ describe('MoWalk', () => {
             [{ a: 'js' }, 'a.js', 'kitchen-sink/a.js'],
             [{ default: { b: 'mjs' } }, 'b.mjs', 'kitchen-sink/b.mjs'],
             [{ c: 'json' }, 'c.json', 'kitchen-sink/c.json'],
-            [{ e: 'cjs' }, 'e.cjs', 'kitchen-sink/e.cjs'],
+            [{ e: 'pjs' }, 'e.pjs', 'kitchen-sink/e.pjs'],
             [{ f: 'js' }, 'f.js', 'kitchen-sink/x/f.js'],
             [{ default: { g: 'mjs' } }, 'g.mjs', 'kitchen-sink/x/g.mjs'],
             [{ h: 'json' }, 'h.json', 'kitchen-sink/x/y/h.json'],
             [{ default: { index: 'mjs' } }, 'index.mjs', 'kitchen-sink/x/z/index.mjs'],
-            [{ k: 'cjs' }, 'k.cjs', 'kitchen-sink/x/y/u/k.cjs'],
+            [{ k: 'pjs' }, 'k.pjs', 'kitchen-sink/x/y/u/k.pjs'],
             [{ l: 'js' }, 'l.js', 'kitchen-sink/x/y/u/l.js']
         ]);
     });

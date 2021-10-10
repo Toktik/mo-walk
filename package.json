@@ -43,5 +43,8 @@
     "extends": [
       "plugin:@hapi/module"
     ]
+  },
+  "dependencies": {
+    "pkg-up": "3.x.x"
   }
 }

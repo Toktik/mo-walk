@@ -25,6 +25,7 @@ describe('MoWalk', () => {
             if (filename.includes('type-is-module')) {
                 // This directory contains .js files which are ESM,
                 // which is incompatible with lab's instrumentation.
+                // See also .labrc.js.
                 return require.extensions['.js.stashed'](mod, filename);
             }
 
@@ -139,23 +140,23 @@ describe('MoWalk', () => {
         await Mo.walk(module, 'closet/kitchen-sink', {
             recursive: true,
             extensions: [...Mo.defaultExtensions, 'pjs'],
-            visit: (value, path, filename) => {
+            visit: (value, path, filename, type) => {
 
-                visits.push([value, filename, relativize(path)]);
+                visits.push([value, filename, relativize(path), type]);
             }
         });
 
         expect(visits.sort(byPath)).to.equal([
-            [{ a: 'js' }, 'a.js', 'kitchen-sink/a.js'],
-            [{ default: { b: 'mjs' } }, 'b.mjs', 'kitchen-sink/b.mjs'],
-            [{ c: 'json' }, 'c.json', 'kitchen-sink/c.json'],
-            [{ e: 'pjs' }, 'e.pjs', 'kitchen-sink/e.pjs'],
-            [{ f: 'js' }, 'f.js', 'kitchen-sink/x/f.js'],
-            [{ default: { g: 'mjs' } }, 'g.mjs', 'kitchen-sink/x/g.mjs'],
-            [{ h: 'json' }, 'h.json', 'kitchen-sink/x/y/h.json'],
-            [{ default: { index: 'mjs' } }, 'index.mjs', 'kitchen-sink/x/z/index.mjs'],
-            [{ k: 'pjs' }, 'k.pjs', 'kitchen-sink/x/y/u/k.pjs'],
-            [{ l: 'js' }, 'l.js', 'kitchen-sink/x/y/u/l.js']
+            [{ a: 'js' }, 'a.js', 'kitchen-sink/a.js', 'cjs'],
+            [{ default: { b: 'mjs' } }, 'b.mjs', 'kitchen-sink/b.mjs', 'esm'],
+            [{ c: 'json' }, 'c.json', 'kitchen-sink/c.json', 'cjs'],
+            [{ e: 'pjs' }, 'e.pjs', 'kitchen-sink/e.pjs', 'cjs'],
+            [{ f: 'js' }, 'f.js', 'kitchen-sink/x/f.js', 'cjs'],
+            [{ default: { g: 'mjs' } }, 'g.mjs', 'kitchen-sink/x/g.mjs', 'esm'],
+            [{ h: 'json' }, 'h.json', 'kitchen-sink/x/y/h.json', 'cjs'],
+            [{ default: { index: 'mjs' } }, 'index.mjs', 'kitchen-sink/x/z/index.mjs', 'esm'],
+            [{ k: 'pjs' }, 'k.pjs', 'kitchen-sink/x/y/u/k.pjs', 'cjs'],
+            [{ l: 'js' }, 'l.js', 'kitchen-sink/x/y/u/l.js', 'cjs']
         ]);
     });
 
@@ -331,20 +332,20 @@ describe('MoWalk', () => {
         const visits = [];
 
         await Mo.walk(module, 'closet/type-is-module', {
-            visit: (value, path, filename) => {
+            visit: (value, path, filename, type) => {
 
-                visits.push([value, filename, relativize(path)]);
+                visits.push([value, filename, relativize(path), type]);
             }
         });
 
         expect(visits.sort(byPath)).to.equal([
-            [{ default: { a: 'js' } }, 'a.js', 'type-is-module/a.js'],
-            [{ default: { d: 'js' } }, 'd.js', 'type-is-module/c/d.js'],
-            [{ default: { f: 'mjs' } }, 'f.mjs', 'type-is-module/f.mjs'],
-            [{ g: 'json' }, 'g.json', 'type-is-module/g.json'],
-            [{ default: { index: 'js' } }, 'index.js', 'type-is-module/c/e/index.js'],
-            [{ default: { index: 'js' } }, 'index.js', 'type-is-module/b/index.js'],
-            [{ type: 'module' }, 'package.json', 'type-is-module/package.json']
+            [{ default: { a: 'js' } }, 'a.js', 'type-is-module/a.js', 'esm'],
+            [{ default: { d: 'js' } }, 'd.js', 'type-is-module/c/d.js', 'esm'],
+            [{ default: { f: 'mjs' } }, 'f.mjs', 'type-is-module/f.mjs', 'esm'],
+            [{ g: 'json' }, 'g.json', 'type-is-module/g.json', 'cjs'],
+            [{ default: { index: 'js' } }, 'index.js', 'type-is-module/c/e/index.js', 'esm'],
+            [{ default: { index: 'js' } }, 'index.js', 'type-is-module/b/index.js', 'esm'],
+            [{ type: 'module' }, 'package.json', 'type-is-module/package.json', 'cjs']
         ]);
     });
 
@@ -400,99 +401,110 @@ describe('MoWalk', () => {
 
             const resolved = await Mo.tryToResolve(fixture('a'));
 
-            expect(resolved).to.be.an.array().and.length(2);
+            expect(resolved).to.be.an.array().and.length(3);
             expect(resolved[0]).to.equal({ a: 'js' });
             expect(relativize(resolved[1])).to.equal('try-to-resolve/a.js');
+            expect(resolved[2]).to.equal('cjs');
         });
 
         it('resolves cjs directory.', async () => {
 
             const resolved = await Mo.tryToResolve(fixture('c'));
 
-            expect(resolved).to.be.an.array().and.length(2);
+            expect(resolved).to.be.an.array().and.length(3);
             expect(resolved[0]).to.equal({ c: 'js' });
             expect(relativize(resolved[1])).to.equal('try-to-resolve/c/index.js');
+            expect(resolved[2]).to.equal('cjs');
         });
 
         it('resolves mjs file with extension.', async () => {
 
             const resolved = await Mo.tryToResolve(fixture('b.mjs'));
 
-            expect(resolved).to.be.an.array().and.length(2);
+            expect(resolved).to.be.an.array().and.length(3);
             expect(resolved[0]).to.equal({ default: { b: 'mjs' } });
             expect(relativize(resolved[1])).to.equal('try-to-resolve/b.mjs');
+            expect(resolved[2]).to.equal('esm');
         });
 
         it('resolves mjs file without extension.', async (flags) => {
 
             const resolved = await Mo.tryToResolve(fixture('b'));
 
-            expect(resolved).to.be.an.array().and.length(2);
+            expect(resolved).to.be.an.array().and.length(3);
             expect(resolved[0]).to.equal({ default: { b: 'mjs' } });
             expect(relativize(resolved[1])).to.equal('try-to-resolve/b.mjs');
+            expect(resolved[2]).to.equal('esm');
         });
 
         it('resolves mjs directory.', async () => {
 
             const resolved = await Mo.tryToResolve(fixture('d'));
 
-            expect(resolved).to.be.an.array().and.length(2);
+            expect(resolved).to.be.an.array().and.length(3);
             expect(resolved[0]).to.equal({ default: { d: 'mjs' } });
             expect(relativize(resolved[1])).to.equal('try-to-resolve/d/index.mjs');
+            expect(resolved[2]).to.equal('esm');
         });
 
         it('resolves esm file with js extension (type=module).', async (flags) => {
 
             const resolved = await Mo.tryToResolve(fixtureTypeModule('a.js'));
 
-            expect(resolved).to.be.an.array().and.length(2);
+            expect(resolved).to.be.an.array().and.length(3);
             expect(resolved[0]).to.equal({ default: { a: 'js' } });
             expect(relativize(resolved[1])).to.equal('type-is-module/a.js');
+            expect(resolved[2]).to.equal('esm');
         });
 
         it('resolves esm file with mjs extension (type=module).', async () => {
 
             const resolved = await Mo.tryToResolve(fixtureTypeModule('f.mjs'));
 
-            expect(resolved).to.be.an.array().and.length(2);
+            expect(resolved).to.be.an.array().and.length(3);
             expect(resolved[0]).to.equal({ default: { f: 'mjs' } });
             expect(relativize(resolved[1])).to.equal('type-is-module/f.mjs');
+            expect(resolved[2]).to.equal('esm');
         });
 
         it('resolves esm .js file without extension (type=module).', async (flags) => {
 
             const resolved = await Mo.tryToResolve(fixtureTypeModule('a'));
 
-            expect(resolved).to.be.an.array().and.length(2);
+            expect(resolved).to.be.an.array().and.length(3);
             expect(resolved[0]).to.equal({ default: { a: 'js' } });
             expect(relativize(resolved[1])).to.equal('type-is-module/a.js');
+            expect(resolved[2]).to.equal('esm');
         });
 
         it('resolves esm .mjs file without extension (type=module).', async () => {
 
             const resolved = await Mo.tryToResolve(fixtureTypeModule('f'));
 
-            expect(resolved).to.be.an.array().and.length(2);
+            expect(resolved).to.be.an.array().and.length(3);
             expect(resolved[0]).to.equal({ default: { f: 'mjs' } });
             expect(relativize(resolved[1])).to.equal('type-is-module/f.mjs');
+            expect(resolved[2]).to.equal('esm');
         });
 
         it('resolves esm .js directory without extension (type=module).', async () => {
 
             const resolved = await Mo.tryToResolve(fixtureTypeModule('b'));
 
-            expect(resolved).to.be.an.array().and.length(2);
+            expect(resolved).to.be.an.array().and.length(3);
             expect(resolved[0]).to.equal({ default: { index: 'js' } });
             expect(relativize(resolved[1])).to.equal('type-is-module/b/index.js');
+            expect(resolved[2]).to.equal('esm');
         });
 
         it('resolves json file without extension (type=module).', async () => {
 
             const resolved = await Mo.tryToResolve(fixtureTypeModule('g'));
 
-            expect(resolved).to.be.an.array().and.length(2);
+            expect(resolved).to.be.an.array().and.length(3);
             expect(resolved[0]).to.equal({ g: 'json' });
             expect(relativize(resolved[1])).to.equal('type-is-module/g.json');
+            expect(resolved[2]).to.equal('cjs');
         });
 
         it('resolves nothing gracefully.', async () => {

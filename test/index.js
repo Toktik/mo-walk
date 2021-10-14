@@ -64,10 +64,7 @@ describe('MoWalk', () => {
         const visits = [];
 
         require.extensions['.pjs'] = require.extensions['.js'];
-        flags.onCleanup = () => {
-
-            delete require.extensions['.pjs'];
-        };
+        flags.onCleanup = () => delete require.extensions['.pjs'];
 
         await Mo.walk(module, 'closet/kitchen-sink', {
             recursive: false,
@@ -349,6 +346,29 @@ describe('MoWalk', () => {
         ]);
     });
 
+    it('walks recursively for .ts files.', async (flags) => {
+
+        // Emulate ts-node
+        require.extensions['.ts'] = require.extensions['.js'];
+        flags.onCleanup = () => delete require.extensions['.ts'];
+
+        const visits = [];
+
+        await Mo.walk(module, 'closet/ts', {
+            visit: (value, path, filename, type) => {
+
+                visits.push([value, filename, relativize(path), type]);
+            }
+        });
+
+        expect(visits.sort(byPath)).to.equal([
+            [{ default: { a: 'ts' } }, 'a.ts', 'ts/a.ts', 'cjs'],
+            [{ b: 'js' }, 'b.js', 'ts/b.js', 'cjs'],
+            [{ default: { d: 'ts' } }, 'd.ts', 'ts/c/d.ts', 'cjs'],
+            [{ default: { index: 'ts' } }, 'index.ts', 'ts/c/e/index.ts', 'cjs']
+        ]);
+    });
+
     it('fails when a visit fails.', async () => {
 
         await expect(Mo.walk(module, 'closet/kitchen-sink', {
@@ -556,6 +576,51 @@ describe('MoWalk', () => {
         it('defaults to false when encountering a bad package.json.', async () => {
 
             expect(await Mo.getDefaultToESM(closet('bad-package-json'))).to.be.false();
+        });
+    });
+
+    describe('getDefaultExport()', () => {
+
+        it('handles falsey values.', () => {
+
+            expect(Mo.getDefaultExport(0, 'x.ts', 'cjs')).to.equal(0);
+            expect(Mo.getDefaultExport('', 'x.ts', 'cjs')).to.equal('');
+            expect(Mo.getDefaultExport(null, 'x.ts', 'cjs')).to.equal(null);
+
+            expect(Mo.getDefaultExport(0, 'x.mjs', 'esm')).to.equal(0);
+            expect(Mo.getDefaultExport('', 'x.mjs', 'esm')).to.equal('');
+            expect(Mo.getDefaultExport(null, 'x.mjs', 'esm')).to.equal(null);
+
+            expect(Mo.getDefaultExport(0, 'x.js', 'cjs')).to.equal(0);
+            expect(Mo.getDefaultExport('', 'x.js', 'cjs')).to.equal('');
+            expect(Mo.getDefaultExport(null, 'x.js', 'cjs')).to.equal(null);
+        });
+
+        it('handles non-object values.', () => {
+
+            expect(Mo.getDefaultExport('xyz', 'x.ts', 'cjs')).to.equal('xyz');
+            expect(Mo.getDefaultExport('xyz', 'x.mjs', 'esm')).to.equal('xyz');
+            expect(Mo.getDefaultExport('xyz', 'x.js', 'cjs')).to.equal('xyz');
+        });
+
+        it('handles missing default.', () => {
+
+            expect(Mo.getDefaultExport({ a: 'b' }, 'x.ts', 'cjs')).to.equal({ a: 'b' });
+            expect(Mo.getDefaultExport({ a: 'b' }, 'x.mjs', 'esm')).to.equal({ a: 'b' });
+            expect(Mo.getDefaultExport({ a: 'b' }, 'x.js', 'cjs')).to.equal({ a: 'b' });
+        });
+
+        it('gets default from ts and esm files.', async (flags) => {
+
+            // Emulate ts-node
+            require.extensions['.ts'] = require.extensions['.js'];
+            flags.onCleanup = () => delete require.extensions['.ts'];
+
+            const ts = await Mo.tryToResolve(closet('ts/a.ts'));
+            const esm = await Mo.tryToResolve(closet('try-to-resolve/b.mjs'));
+
+            expect(Mo.getDefaultExport(...ts)).to.equal({ a: 'ts' });
+            expect(Mo.getDefaultExport(...esm)).to.equal({ b: 'mjs' });
         });
     });
 });

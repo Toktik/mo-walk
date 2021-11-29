@@ -1,3 +1,5 @@
 test/closet/bad-syntax/x/b.js
+test/closet/bad-package-json/**/*.js
 test/closet/try-to-resolve/a-bad.js
 test/closet/try-to-resolve/b-bad.mjs
+test/closet/type-is-module/**/*.js

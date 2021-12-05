@@ -33,7 +33,13 @@ describe('MoWalk', () => {
         };
     });
 
-    const relativize = (filename) => Path.relative(Path.join(__dirname, 'closet'), filename);
+    const relativize = (filename) => {
+
+        return Path.relative(Path.join(__dirname, 'closet'), filename)
+            .split(Path.sep)        // Normalize to posix,
+            .join(Path.posix.sep);  // even if paths are windows
+    };
+
     const closet = (path) => Path.resolve(__dirname, 'closet', path);
     const byPath = ([,pathA], [,pathB]) => {
 
@@ -188,8 +194,9 @@ describe('MoWalk', () => {
 
         const visitsA = [];
 
+        const v = Path.sep;
         await Mo.walk(module, 'closet/kitchen-sink', {
-            include: (path) => path.includes('kitchen-sink/x/'),
+            include: (path) => path.includes(`kitchen-sink${v}x${v}`),
             visit: (value, path, filename) => {
 
                 visitsA.push([value, filename, relativize(path)]);
@@ -225,8 +232,9 @@ describe('MoWalk', () => {
 
         const visitsA = [];
 
+        const v = Path.sep;
         await Mo.walk(module, 'closet/kitchen-sink', {
-            exclude: (path) => !path.includes('kitchen-sink/x/'),
+            exclude: (path) => !path.includes(`kitchen-sink${v}x${v}`),
             visit: (value, path, filename) => {
 
                 visitsA.push([value, filename, relativize(path)]);
@@ -262,8 +270,9 @@ describe('MoWalk', () => {
 
         const visits = [];
 
+        const v = Path.sep;
         await Mo.walk(module, 'closet/kitchen-sink', {
-            include: (path) => path.includes('kitchen-sink/x/'),
+            include: (path) => path.includes(`kitchen-sink${v}x${v}`),
             exclude: (_, filename) => filename.endsWith('.json'),
             visit: (value, path, filename) => {
 
@@ -385,7 +394,7 @@ describe('MoWalk', () => {
         await expect(Mo.walk(module, 'closet/multiple-index', {
             stopAtIndexes: true,
             visit: () => null
-        })).to.reject(AssertionError, /^Multiple index entries found in .+?\/multiple-index\/x: index\.js, index\.mjs\.$/);
+        })).to.reject(AssertionError, /^Multiple index entries found in .+?[\/\\]multiple-index[\/\\]x: index\.js, index\.mjs\.$/);
     });
 
     it('fails when failing to specific visit option correctly.', async () => {

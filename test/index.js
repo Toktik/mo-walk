@@ -33,7 +33,13 @@ describe('MoWalk', () => {
         };
     });
 
-    const relativize = (filename) => Path.relative(Path.join(__dirname, 'closet'), filename);
+    const relativize = (filename) => {
+
+        return Path.relative(Path.join(__dirname, 'closet'), filename)
+            .split(Path.sep)        // Normalize to posix,
+            .join(Path.posix.sep);  // even if paths are windows
+    };
+
     const closet = (path) => Path.resolve(__dirname, 'closet', path);
     const byPath = ([,pathA], [,pathB]) => {
 

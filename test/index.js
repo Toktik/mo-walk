@@ -631,5 +631,16 @@ describe('MoWalk', () => {
             expect(Mo.getDefaultExport(...ts)).to.equal({ a: 'ts' });
             expect(Mo.getDefaultExport(...esm)).to.equal({ b: 'mjs' });
         });
+
+        it('gets default from js files that are esmodules', async () => {
+
+            const jsEsm = await Mo.tryToResolve(closet('cjs-as-esm/a.js'));
+            const js = await Mo.tryToResolve(closet('cjs-as-esm/b.js'));
+            const jsNotEsm = await Mo.tryToResolve(closet('cjs-as-esm/c.js'));
+
+            expect(Mo.getDefaultExport(...jsEsm)).to.equal({ a: 'js' });
+            expect(Mo.getDefaultExport(...js)).to.equal({ b: 'js' });
+            expect(Mo.getDefaultExport(...jsNotEsm)).to.equal({ default: { c: 'js' } });
+        });
     });
 });
